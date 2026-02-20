@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>酸奶单词 - 趣味背单词</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            accent: '#F59E0B',
+            dark: '#1E293B',
+            light: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      
+      /* 为单词卡片添加平滑的过渡效果 */
+      #word-card {
+        transition: opacity 0.2s ease-in-out;
+        will-change: opacity;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.15), 0 8px 10px -6px rgba(59, 130, 246, 0.15);
+      }
+      .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        background-image: linear-gradient(45deg, #3B82F6, #10B981);
+      }
+      .btn-bounce {
+        transition: transform 0.2s ease;
+      }
+      .btn-bounce:active {
+        transform: scale(0.95);
+      }
+      
+      /* 移动端句号自动换行 */
+      .mobile-break-after-period {
+        /* 默认情况下不做特殊处理 */
+      }
+      
+      /* 为桌面端和移动端都增加洗脑记忆和Rap记忆的行间距 */
+      #mixed-sentence, #rap-sentence {
+        line-height: 1.8; /* 增加行间距，使每行之间的间距更高一些 */
+        text-align: left;
+        word-wrap: break-word;
+        white-space: pre-line; /* 保留换行但不保留多余空格 */
+      }
+      
+      @media (max-width: 640px) {
+        .mobile-break-after-period {
+          white-space: pre-wrap;
+          text-align: left; /* 确保文本左对齐 */
+        }
+        
+        /* 在句号后添加换行 */
+        .mobile-break-after-period::after {
+          content: "";
+        }
+        
+        /* 使用JavaScript处理句号后的换行，这里添加CSS辅助 */
+        .mobile-break-after-period span.period-break {
+          display: block;
+        }
+      }
+      /* 确保Font Awesome图标在所有设备上正常显示 */
+      .fa {
+        display: inline-block !important;
+        font-family: 'FontAwesome' !important;
+        font-style: normal !important;
+        font-weight: normal !important;
+        line-height: 1 !important;
+        speak: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* 确保图标大小在移动端足够清晰 */
+        font-size: inherit !important;
+      }
+      
+      /* 缩小例句、洗脑记忆和Rap记忆部分的喇叭图标 */
+      h3 > button .fa-volume-up {
+        font-size: 0.8em !important;
+        width: 1em;
+        height: 1em;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      /* 设置标题前的彩色竖线 */
+      .example-line {
+        width: 3px;
+        height: 0.9em;
+        background-color: #3B82F6; /* 蓝色 */
+        border-radius: 2px;
+        align-self: center;
+      }
+      
+      .memory-line {
+        width: 3px;
+        height: 0.9em;
+        background-color: #10B981; /* 绿色 */
+        border-radius: 2px;
+        align-self: center;
+      }
+      
+      .rap-line {
+        width: 3px;
+        height: 0.9em;
+        background-color: #F59E0B; /* 黄色 */
+        border-radius: 2px;
+        align-self: center;
+      }
+      
+      /* 移动端图标响应式优化 */
+      @media (max-width: 640px) {
+        .fa {
+          font-size: 1.2em !important;
+        }
+        
+        /* 移动端隐藏例句播放按钮 */
+        .example-speaker-btn {
+          display: none !important;
+        }
+        
+        /* 确保标题前的图标在移动端正确显示 */
+        h3 .fa {
+          margin-right: 0.5rem;
+          width: 1.2em;
+          height: 1.2em;
+          display: flex !important;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* 确保喇叭按钮在移动端足够大，易于点击 */
+        button .fa-volume-up {
+          font-size: 1.3em !important;
+          width: 1.5em;
+          height: 1.5em;
+          display: flex !important;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+      
+      /* 隐藏日语单词中的假名 */
+      .hidden-kana {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-dark min-h-screen transition-colors duration-300">
+  <!-- 顶部导航已移除 -->
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8 md:py-16">
+    
+    <!-- 页面容器 -->
+    <div class="max-w-3xl mx-auto">
+      <!-- 趣味故事页面 -->
+      <div id="story-page" class="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 card-shadow card-hover transition-all duration-500">
+        <!-- 页面标题 -->
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+              <span class="memory-line mr-2"></span>趣味故事
+            </h1>
+            <button onclick="toggleJapaneseWords()" class="ml-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors btn-bounce inline-block">
+              <i class="fa fa-eye" id="eye-icon"></i>
+            </button>
+          </div>
+          <!-- Tab选择器 -->
+          <div class="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button onclick="switchStoryTab('basic')" class="px-3 py-0.5 text-xs font-medium bg-secondary/10 text-secondary border-r border-gray-200 dark:border-gray-700 active-tab">基础</button>
+            <button onclick="switchStoryTab('rap')" class="px-3 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">RAP</button>
+          </div>
+        </div>
+        
+        <!-- 故事内容 -->
+        <div class="mb-8">
+          <!-- 基础版本 -->
+          <div id="basic-story" class="block">
+            <p class="font-medium text-gray-800 dark:text-white leading-loose mb-0 text-left text-base">
+              <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="人"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>人<span class="hidden-kana">（ひと）</span></span>们为了共同的<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="事業"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>事業<span class="hidden-kana">（じぎょう）</span></span>组成了<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="チーム"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>チーム</span>。<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="大抵"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>大抵<span class="hidden-kana">（たいてい）</span></span>情况下，大家在<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="自宅"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>自宅<span class="hidden-kana">（じたく）</span></span>通过<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="文通"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>文通<span class="hidden-kana">（ぶんつう）</span></span>交流工作，<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="参考"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>参考<span class="hidden-kana">（さんこう）</span></span>Ai<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="アドバイザー"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>アドバイザー</span>的建议。当工作<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="出来上がる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>出来上がる<span class="hidden-kana">（できあがる）</span></span>时，那种成就感让人很满足。有时候，即使隔着距离，也能<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="聞こえる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>聞こえる<span class="hidden-kana">（きこえる）</span></span>彼此的鼓励，团队的力量让我们不断前行。
+            </p>
+          </div>
+          <!-- RAP版本 -->
+          <div id="rap-story" class="hidden">
+            <p class="font-medium text-gray-800 dark:text-white leading-loose mb-0 text-left text-base">
+              <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="人"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>人<span class="hidden-kana">（ひと）</span></span>们为了共同的<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="事業"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>事業<span class="hidden-kana">（じぎょう）</span></span>，结成同心的<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="チーム"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>チーム</span>。<br>
+              <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="大抵"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>大抵<span class="hidden-kana">（たいてい）</span></span>守在<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="自宅"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>自宅<span class="hidden-kana">（じたく）</span></span>，以<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="文通"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>文通<span class="hidden-kana">（ぶんつう）</span></span>把心意汇。<br>
+              <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="参考"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>参考<span class="hidden-kana">（さんこう）</span></span>Ai <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="アドバイザー"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>アドバイザー</span>，思路一步步相随。<br>
+              待到工作<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="出来上がる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>出来上がる<span class="hidden-kana">（できあがる）</span></span>，满心成就感难退。<br>
+              纵然相隔千万里，也能<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="聞こえる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>聞こえる<span class="hidden-kana">（きこえる）</span></span>声声慰，<br>
+              团队之力燃心火，一路向前不皱眉
+            </p>
+          </div>
+        </div>
+        
+        <!-- 涉及单词标题 -->
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center">
+            <h2 class="text-xl md:text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
+              <span class="memory-line mr-2"></span>涉及单词
+            </h2>
+            <button onclick="toggleAllWordMeanings();" class="ml-3 text-secondary/40 hover:text-secondary/60 transition-colors btn-bounce inline-block">
+              <i class="fa fa-retweet" id="toggle-icon"></i>
+            </button>
+          </div>
+          <!-- Tab选择器 -->
+          <div class="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button onclick="switchWordOrderTab('normal')" class="px-3 py-0.5 text-xs font-medium bg-secondary/10 text-secondary border-r border-gray-200 dark:border-gray-700 active-tab" id="word-order-normal">正序</button>
+            <button onclick="switchWordOrderTab('random')" class="px-3 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" id="word-order-random">乱序</button>
+          </div>
+        </div>
+        
+        <!-- 单词列表 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="word-list-container">
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '人（ひと）⓪', '人')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">人（ひと）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名] 人</p>
+            </div>
+            <button onclick="speakText('人', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '事業（じぎょう）①', '事业')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">事業（じぎょう）①</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名] 事业</p>
+            </div>
+            <button onclick="speakText('事業', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, 'チーム ①', '团队')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">チーム ①</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名] 团队</p>
+            </div>
+            <button onclick="speakText('チーム', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '大抵（たいてい）⓪', '大概，通常')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">大抵（たいてい）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[副] 大概，通常</p>
+            </div>
+            <button onclick="speakText('大抵', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '自宅（じたく）⓪', '自己家')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">自宅（じたく）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名] 自己家</p>
+            </div>
+            <button onclick="speakText('自宅', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '文通（ぶんつう）⓪', '通信，书信往来')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">文通（ぶんつう）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名・サ变] 通信，书信往来</p>
+            </div>
+            <button onclick="speakText('文通', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '参考（さんこう）⓪', '参考')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">参考（さんこう）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名・サ变] 参考</p>
+            </div>
+            <button onclick="speakText('参考', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, 'アドバイザー ③', '顾问')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">アドバイザー ③</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[名] 顾问</p>
+            </div>
+            <button onclick="speakText('アドバイザー', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '出来上がる（できあがる）⓪④', '完成，做好')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">出来上がる（できあがる）⓪④</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[自五] 完成，做好</p>
+            </div>
+            <button onclick="speakText('出来上がる', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+          <div class="bg-secondary/5 p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors duration-300" onclick="toggleWordMeaning(this, '聞こえる（きこえる）⓪', '能听见')">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-800 dark:text-white word-text">聞こえる（きこえる）⓪</p>
+              <p class="font-medium text-gray-800 dark:text-white word-meaning hidden">[自一] 能听见</p>
+            </div>
+            <button onclick="speakText('聞こえる', 'ja-JP'); event.stopPropagation();" class="text-secondary/70 hover:text-secondary/90 transition-colors btn-bounce inline-block ml-2 flex-shrink-0">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 单词卡片 -->
+      <div id="word-card" class="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 card-shadow card-hover transition-all duration-500 hidden">
+        <!-- 单词和音标 -->
+        <div class="mb-2 word-phonetic-container">
+          <div class="word-container">
+            <h2 id="word" class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white"></h2>
+          </div>
+          <div class="phonetic-container">
+            <span id="phonetic" class="text-gray-500 dark:text-gray-400 italic mr-2"></span>
+            <button onclick="speakWord()" class="text-primary hover:text-primary/80 transition-colors btn-bounce inline-block">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+        </div>
+        <style>
+          /* 默认桌面端样式 */
+          .word-phonetic-container {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+          
+          /* 移动端样式：将音标和喇叭图标移到单词下方 */
+          @media (max-width: 767px) {
+            .word-phonetic-container {
+              flex-direction: column;
+              align-items: flex-start;
+            }
+            .phonetic-container {
+              margin-top: 0.5rem;
+            }
+          }
+        </style>
+        
+        <!-- 单词释义 -->
+        <div class="mb-6">
+          <div id="part-of-speech"></div>
+        </div>
+        
+        <!-- 例句 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
+            <span class="example-line mr-2"></span>例句
+            <button onclick="speakExample()" class="text-primary hover:text-primary/80 transition-colors btn-bounce ml-2 example-speaker-btn">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </h3>
+          <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
+            <p id="example-sentence" class="text-gray-800 dark:text-gray-200 mb-2"></p>
+            <p id="example-translation" class="text-gray-600 dark:text-gray-400 text-sm"></p>
+          </div>
+        </div>
+        
+        <!-- 中英文结合语句 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
+            <span class="memory-line mr-2"></span>洗脑记忆
+          </h3>
+          <p id="mixed-sentence" class="text-sm text-gray-800 dark:text-gray-200 bg-secondary/5 p-4 rounded-xl"></p>
+        </div>
+        
+        <!-- Rap语句 -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
+            <span class="rap-line mr-2"></span>Rap记忆
+          </h3>
+          <p id="rap-sentence" class="text-sm mobile-break-after-period text-gray-800 dark:text-gray-200 bg-accent/5 p-4 rounded-xl"></p>
+        </div>
+      </div>
+      
+      <!-- 导航按钮 -->
+      <div class="flex justify-between items-center mt-8">
+        <button id="prev-btn" class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-full shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed btn-bounce">
+          <i class="fa fa-arrow-left mr-2"></i>上一个
+        </button>
+        <span id="word-counter" class="text-gray-400 dark:text-gray-500">1/10</span>
+        <button id="next-btn" class="bg-secondary text-white px-6 py-3 rounded-full shadow hover:shadow-md hover:bg-secondary/90 transition-all btn-bounce">
+          下一个<i class="fa fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+  
+  <!-- 信息弹窗 -->
+  <div id="info-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 transform transition-all">
+      <div class="flex justify-between items-start mb-4">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white">使用说明</h3>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+        <li class="flex items-start">
+          <i class="fa fa-volume-up text-primary mt-1 mr-2"></i>
+          <span>点击喇叭图标可以朗读单词和例句</span>
+        </li>
+        <li class="flex items-start">
+          <i class="fa fa-arrow-left text-gray-500 mt-1 mr-2"></i>
+          <i class="fa fa-arrow-right text-gray-500 mt-1 mr-2"></i>
+          <span>使用箭头按钮切换单词</span>
+        </li>
+
+        <li class="flex items-start">
+          <i class="fa fa-star text-accent mt-1 mr-2"></i>
+          <span>通过趣味Rap语句和中英文洗脑内容帮助记忆单词</span>
+        </li>
+      </ul>
+      <button id="got-it-btn" class="mt-6 w-full bg-primary text-white py-3 rounded-lg hover:bg-primary/90 transition-colors btn-bounce">
+        明白了
+      </button>
+    </div>
+  </div>
+  <script>
+    // 移动端句号自动换行功能 - 重写为更直接有效的实现
+    function applyPeriodBreaks() {
+      // 只针对rap-sentence元素处理，确保直接定位到需要换行的元素
+      const rapElement = document.getElementById('rap-sentence');
+      if (!rapElement) return;
+      
+      // 获取元素当前内容
+      let content = rapElement.innerHTML;
+      
+      // 移除所有现有的br标签，避免重复添加
+      content = content.replace(/<br\s*\/?>/gi, '');
+      
+      // 先将原始换行符\n替换为空格，避免双重换行导致行间距过大
+      content = content.replace(/\n/g, ' ');
+      
+      if (window.innerWidth <= 640) {
+        // 移动端处理：在句号和波浪号后添加br标签
+        content = content.replace(/。/g, '。<br>').replace(/～/g, '～<br>');
+      }
+      
+      // 立即应用处理后的内容
+      rapElement.innerHTML = content;
+    }
+    
+    // 优化版：确保所有单词的rap记忆内容都能正确换行
+    const originalUpdateWordCard = updateWordCard;
+    updateWordCard = function(isInitialLoad) {
+      // 先调用原始函数
+      originalUpdateWordCard.call(this, isInitialLoad);
+      
+      // 增加多次延迟调用，确保DOM完全更新后应用换行
+      // 第一次调用（较短延迟）
+      setTimeout(applyPeriodBreaks, 200);
+      // 第二次调用（较长延迟，确保在所有DOM更新后）
+      setTimeout(applyPeriodBreaks, 500);
+    };
+    
+    // 页面加载完成后初始化
+    window.addEventListener('DOMContentLoaded', function() {
+      // 初始化页面
+      updateWordCard(true);
+      setupEventListeners();
+      
+      // 立即应用换行处理
+      applyPeriodBreaks();
+      // 添加延迟调用确保首次加载时内容正确
+      setTimeout(applyPeriodBreaks, 300);
+    });
+    
+    // 保留窗口大小改变时的监听
+    window.addEventListener('resize', function() {
+      setTimeout(applyPeriodBreaks, 100);
+    });
+    
+    // 添加一个简单的点击事件监听器作为备用，但限制调用频率
+    let lastClickTime = 0;
+    const clickDelay = 500; // 500ms内只执行一次
+    document.addEventListener('click', function() {
+      const currentTime = new Date().getTime();
+      if (currentTime - lastClickTime > clickDelay) {
+        applyPeriodBreaks();
+        lastClickTime = currentTime;
+      }
+    });
+    
+    // 检查是否有nextWord和prevWord函数，确保单词切换时也能触发换行
+    if (typeof nextWord === 'function') {
+      const originalNextWord = nextWord;
+      nextWord = function() {
+        originalNextWord.call(this);
+        // 切换到下一个单词后应用换行
+        setTimeout(applyPeriodBreaks, 300);
+      };
+    }
+    
+    if (typeof prevWord === 'function') {
+      const originalPrevWord = prevWord;
+      prevWord = function() {
+        originalPrevWord.call(this);
+        // 切换到上一个单词后应用换行
+        setTimeout(applyPeriodBreaks, 300);
+      };
+    }
+    
+    // 单词数据
+    const vocabularyList = [
+      {
+        word: "専門",
+        phonetic: "せんもん ⓪",
+        partOfSpeech: "[名] 专门；专业；专长",
+        example: "私の専門は日本語です。",
+        exampleCn: "我的专业是日语。",
+        mixed: "走进校园选准心仪的 <strong class='text-secondary'>専門</strong>，深耕热爱的 <strong class='text-secondary'>専門</strong> 领域，打磨专属的 <strong class='text-secondary'>専門</strong> 技能，<strong class='text-secondary'>専門</strong> 就是安身立命的核心底气。",
+        rap: "选定 <strong class='text-accent'>専門</strong> 心所向，深耕领域本领强。专属专长闪光芒，追梦路上不彷徨。"
+      },
+      {
+        word: "教室",
+        phonetic: "きょうしつ ⓪",
+        partOfSpeech: "[名] 教室；讲习所，学习班",
+        example: "教室で日本語を勉強しています。",
+        exampleCn: "我在教室学习日语。",
+        mixed: "明亮整洁的 <strong class='text-secondary'>教室</strong> 坐满同窗，安静的 <strong class='text-secondary'>教室</strong> 飘着书香，温暖的 <strong class='text-secondary'>教室</strong> 藏着知识，<strong class='text-secondary'>教室</strong> 见证每一次努力与成长。",
+        rap: "明亮 <strong class='text-accent'>教室</strong> 书声扬，认真学习本领强。知识殿堂心向往，成长路上放光芒。"
+      },
+      {
+        word: "たち",
+        phonetic: "たち [接尾]",
+        partOfSpeech: "(接在名词、代词之后表示复数) 们",
+        example: "私たちは友達です。",
+        exampleCn: "我们是朋友。",
+        mixed: "名词代词后加 <strong class='text-secondary'>たち</strong>，瞬间变复数，私<span class='text-secondary'>たち</span>是我们、君<span class='text-secondary'>たち</span>是你们、彼<span class='text-secondary'>たち</span>是他们，小小<span class='text-secondary'>たち</span>分清单复数，简单又好记。",
+        rap: "接尾 <strong class='text-accent'>たち</strong> 表复数，你我他们全囊括。小小后缀用处多，日语表达不犯错。"
+      },
+      {
+        word: "金魚",
+        phonetic: "きんぎょ ①",
+        partOfSpeech: "[名] 金鱼",
+        example: "金魚を飼っています。",
+        exampleCn: "我养了金鱼。",
+        mixed: "清澈鱼缸里我养了一条漂亮的 <strong class='text-secondary'>金魚</strong>，它是一条摇着尾巴慢悠悠的可爱 <strong class='text-secondary'>金魚</strong>，<strong class='text-secondary'>金魚</strong> 给我的生活添满温柔和治愈。",
+        rap: "水中悠游小 <strong class='text-accent'>金魚</strong>，尾巴摇摆好治愈。缸里自在好高兴，烦恼全都忘干净。"
+      },
+      {
+        word: "熱心",
+        phonetic: "ねっしん ①③",
+        partOfSpeech: "[名・形動] 热心，热情",
+        example: "彼は勉強に熱心です。",
+        exampleCn: "他学习很热心 / 很认真。",
+        mixed: "抱着 <strong class='text-secondary'>熱心</strong> 的态度对待学习，带着 <strong class='text-secondary'>熱心</strong> 的心意帮助他人，满怀 <strong class='text-secondary'>熱心</strong> 面对每件事，<strong class='text-secondary'>熱心</strong> 让生活满是温暖与动力。",
+        rap: "满怀 <strong class='text-accent'>熱心</strong> 态度真，认真做事有恒心。热情满满向前奔，美好未来在掌心。"
+      },
+      {
+        word: "調べる",
+        phonetic: "しらべる ③",
+        partOfSpeech: "[他下一] 调查，检查；查阅；审问，审讯",
+        example: "辞書で単語を調べます。",
+        exampleCn: "我用词典查单词。",
+        mixed: "遇到不懂就 <strong class='text-secondary'>調べる</strong>，发现疑问就 <strong class='text-secondary'>調べる</strong>，翻开资料仔细 <strong class='text-secondary'>調べる</strong>，<strong class='text-secondary'>調べる</strong> 让疑惑解开、真相清晰。",
+        rap: "遇到疑问 <strong class='text-accent'>調べる</strong>，查阅资料解难题。认真查证不放弃，真相答案全明晰。"
+      },
+      {
+        word: "こそ",
+        phonetic: "こそ ①",
+        partOfSpeech: "[助] 正是，就是；反而，却；正因为…… 才……",
+        example: "努力こそ成功の秘訣です。",
+        exampleCn: "努力才是成功的秘诀。",
+        mixed: "<strong class='text-secondary'>こそ</strong> 是强调的小助词，正是梦想 <strong class='text-secondary'>こそ</strong> 值得追，正因为坚持 <strong class='text-secondary'>こそ</strong> 能赢，<strong class='text-secondary'>こそ</strong> 让语气更坚定，突出心中最在意的答案。",
+        rap: "助词 <strong class='text-accent'>こそ</strong> 表强调，正是所求心所向。正因坚持有力量，追梦路上敢闯荡。"
+      },
+      {
+        word: "勝つ",
+        phonetic: "かつ ①",
+        partOfSpeech: "[自五] 胜，获胜；超过，胜过；克制，克服",
+        example: "私たちは試合に勝ちました。",
+        exampleCn: "我们比赛赢了。",
+        mixed: "赛场拼搏努力 <strong class='text-secondary'>勝つ</strong>，克服困难勇敢 <strong class='text-secondary'>勝つ</strong>，超越自我悄悄 <strong class='text-secondary'>勝つ</strong>，<strong class='text-secondary'>勝つ</strong> 是汗水换来的荣耀，是坚持后的惊喜。",
+        rap: "奋力拼搏去 <strong class='text-accent'>勝つ</strong>，克服困难不服输。超越自我迈大步，胜利荣光归我属。"
+      },
+      {
+        word: "出す",
+        phonetic: "だす ①",
+        partOfSpeech: "[他五] 拿出，掏出，取出；派出；提出，提交；露出；发表，公开",
+        example: "カバンからノートを出します。",
+        exampleCn: "我从包里拿出笔记本。",
+        mixed: "打开书包把文具 <strong class='text-secondary'>出す</strong>，勇敢把想法提案 <strong class='text-secondary'>出す</strong>，露出笑容把善意 <strong class='text-secondary'>出す</strong>，发表心声把态度 <strong class='text-secondary'>出す</strong>，<strong class='text-secondary'>出す</strong> 是主动展现、勇敢表达。",
+        rap: "伸手拿出好物件，提出想法勇向前。露出笑脸暖人间，主动 <strong class='text-accent'>出す</strong> 不拖延。"
+      },
+      {
+        word: "年・歳",
+        phonetic: "とし ②",
+        partOfSpeech: "[名] 年，岁；年龄，岁数；岁月，光阴",
+        example: "私は 20 歳です。",
+        exampleCn: "我 20 岁。",
+        mixed: "时光流转又过一 <strong class='text-secondary'>とし</strong>，慢慢长大增长 <strong class='text-secondary'>とし</strong>，珍惜每一段美好 <strong class='text-secondary'>とし</strong>，<strong class='text-secondary'>とし</strong> 记载成长足迹，藏着岁月温柔。",
+        rap: "时光匆匆又一年，增长 <strong class='text-accent'>とし</strong> 记心间。珍惜岁月莫等闲，成长路上勇向前。"
+      }
+    ];
+    
+    // 当前页面索引 (0: 故事页面, 1-10: 单词页面)
+    let currentIndex = 0;
+    
+    // DOM元素
+    const storyPage = document.getElementById('story-page');
+    const wordCard = document.getElementById('word-card');
+    const wordElement = document.getElementById('word');
+    const phoneticElement = document.getElementById('phonetic');
+    const partOfSpeechElement = document.getElementById('part-of-speech');
+    const exampleElement = document.getElementById('example-sentence');
+    const mixedElement = document.getElementById('mixed-sentence');
+    const rapElement = document.getElementById('rap-sentence');
+    const counterElement = document.getElementById('word-counter');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const infoBtn = document.getElementById('info-btn');
+    const infoModal = document.getElementById('info-modal');
+    const closeModal = document.getElementById('close-modal');
+    const gotItBtn = document.getElementById('got-it-btn');
+    
+    // 初始化逻辑已移至DOMContentLoaded事件监听器
+    
+    /* 更新页面内容 */
+    function updateWordCard(isInitialLoad = false) {
+      // 隐藏所有页面
+      storyPage.classList.add('hidden');
+      wordCard.classList.add('hidden');
+      
+      if (currentIndex === 0) {
+        // 显示故事页面
+        storyPage.classList.remove('hidden');
+        counterElement.textContent = `1/11`;
+        prevBtn.disabled = true;
+        nextBtn.innerHTML = '下一个<i class="fa fa-arrow-right ml-2"></i>';
+      } else {
+        // 显示单词页面
+        wordCard.classList.remove('hidden');
+        
+        // 为了减少闪烁，我们不使用完全透明，而是使用更平滑的过渡效果
+        if (!isInitialLoad) {
+          // 只使用透明度变化，避免缩放带来的抖动，使用更短的过渡时间
+          wordCard.classList.add('transition-opacity', 'duration-200', 'opacity-80');
+        }
+        
+        // 获取单词数据（currentIndex-1 因为单词索引从0开始）
+        const wordData = vocabularyList[currentIndex - 1];
+        
+        // 不使用setTimeout延迟更新内容，这样可以减少闪烁
+        wordElement.textContent = wordData.word;
+        phoneticElement.textContent = wordData.phonetic;
+        // 将每个词性行包装在单独的span标签中，并为每个span添加圆角样式
+        const partsOfSpeech = wordData.partOfSpeech.split('\n').filter(part => part.trim());
+        partOfSpeechElement.innerHTML = partsOfSpeech.map(part => 
+          `<span class="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-1">${part}</span>`
+        ).join('');
+        exampleElement.textContent = wordData.example;
+        // 更新例句中文翻译，移除括号
+        const exampleTranslation = document.getElementById('example-translation');
+        exampleTranslation.textContent = wordData.exampleCn.replace(/[()]/g, '');
+        mixedElement.innerHTML = wordData.mixed;
+        rapElement.innerHTML = wordData.rap;
+        counterElement.textContent = `${currentIndex + 1}/11`;
+        
+        // 更新按钮状态
+        prevBtn.disabled = false;
+        
+        // 检查是否是最后一个单词
+        if (currentIndex === vocabularyList.length) {
+          nextBtn.innerHTML = '返回<i class="fa fa-arrow-right ml-2"></i>';
+        } else {
+          nextBtn.innerHTML = '下一个<i class="fa fa-arrow-right ml-2"></i>';
+        }
+        
+        // 使用setTimeout来移除动画类，创建平滑的过渡效果
+        if (!isInitialLoad) {
+          setTimeout(() => {
+            wordCard.classList.remove('opacity-70');
+          }, 50); // 较短的延迟，让过渡更自然
+        }
+      }
+    }
+    
+    // 朗读单词
+    function speakWord() {
+      if (currentIndex > 0) {
+        const word = vocabularyList[currentIndex - 1].word;
+        speakText(word, 'ja-JP');
+      }
+    }
+    
+    // 朗读例句
+    function speakExample() {
+      if (currentIndex > 0) {
+        const example = vocabularyList[currentIndex - 1].example;
+        speakText(example, 'ja-JP');
+      }
+    }
+    
+    // 全局变量存储音频元素和用户交互状态
+    let userHasInteracted = false;
+    let currentAudio = null;
+    
+    // 文本朗读功能 - 使用多种TTS服务
+    function speakText(text, lang = 'ja-JP') {
+      console.log('请求播放语音:', text, '语言:', lang);
+      
+      // 检查用户是否已交互
+      if (!userHasInteracted) {
+        console.log('用户尚未交互，初始化音频系统');
+        initAudioSystem();
+        userHasInteracted = true;
+      }
+      
+      // 停止当前正在播放的音频
+      stopCurrentAudio();
+      
+      // 检测是否为移动设备
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // 移动设备：策略不变
+        if (text.length <= 15) {
+          // 短文本（单词）：使用有道词典API
+          tryYoudaoAPI(text, lang)
+            .catch(error => {
+              console.error('有道词典API失败:', error);
+            });
+        } else {
+          // 长文本（例句）：使用TextReadTTS API
+          console.log('文本较长，使用TextReadTTS API');
+          tryTextReadTTS(text, lang)
+            .catch(error => {
+              console.error('TextReadTTS API失败:', error);
+            });
+        }
+      } else {
+        // PC设备：根据VPN状态选择TTS服务
+        checkVPNAndSpeak(text, lang);
+      }
+    }
+    
+    // 检测VPN并选择合适的TTS服务
+    async function checkVPNAndSpeak(text, lang) {
+      // PC端：有道词典API → Web Speech API → TextReadTTS
+      console.log('PC端朗读，首选有道词典API');
+      
+      tryYoudaoAPI(text, lang)
+        .catch(error => {
+          console.log('有道词典API失败，尝试Web Speech API');
+          return tryWebSpeechAPI(text, lang);
+        })
+        .catch(error => {
+          console.log('Web Speech API失败，尝试TextReadTTS API');
+          return tryTextReadTTS(text, lang);
+        })
+        .catch(error => {
+          console.error('所有TTS服务均失败:', error);
+        });
+    }
+    
+    // 尝试使用有道词典API
+    function tryYoudaoAPI(text, lang = 'ja-JP') {
+      return new Promise((resolve, reject) => {
+        console.log('尝试使用有道词典API播放语音:', text);
+        
+        try {
+          // 创建音频元素
+          const audio = new Audio();
+          currentAudio = audio;
+          
+          // 使用有道词典TTS服务
+          // 重要：使用HTTPS协议，避免混合内容问题
+          const url = `https://dict.youdao.com/dictvoice?le=jap&audio=${encodeURIComponent(text)}`;
+          
+          console.log('使用有道词典API:', url);
+          
+          audio.src = url;
+          
+          // 设置超时，如果5秒内没有开始播放，则认为失败
+          const timeout = setTimeout(() => {
+            console.error('有道词典API超时');
+            reject(new Error('有道词典API超时'));
+          }, 5000);
+          
+          // 监听音频事件
+          audio.addEventListener('canplaythrough', () => {
+            clearTimeout(timeout);
+            console.log('有道词典API音频加载完成');
+          });
+          
+          audio.addEventListener('ended', () => {
+            clearTimeout(timeout);
+            console.log('有道词典API播放完成:', text);
+            resolve();
+          });
+          
+          audio.addEventListener('error', (error) => {
+            clearTimeout(timeout);
+            console.error('有道词典API播放失败:', error);
+            reject(error);
+          });
+          
+          // 播放音频
+          audio.play()
+            .then(() => {
+              console.log('有道词典API播放开始:', text);
+            })
+            .catch(error => {
+              clearTimeout(timeout);
+              console.error('有道词典API播放失败:', error);
+              reject(error);
+            });
+        } catch (error) {
+          console.error('有道词典API初始化失败:', error);
+          reject(error);
+        }
+      });
+    }
+    
+    // 尝试使用TextReadTTS.com API（免费日语文本转语音接口）
+    function tryTextReadTTS(text, lang = 'ja-JP') {
+      return new Promise((resolve, reject) => {
+        console.log('尝试使用TextReadTTS API播放语音:', text);
+        
+        try {
+          // 创建音频元素
+          const audio = new Audio();
+          currentAudio = audio;
+          
+          // 使用TextReadTTS.com API
+          // 格式: https://textreadtts.com/tts/convert?accessKey=FREE&language=japanese&speaker=speaker2&text=文本
+          const url = `https://textreadtts.com/tts/convert?accessKey=FREE&language=japanese&speaker=speaker2&text=${encodeURIComponent(text)}`;
+          
+          console.log('使用TextReadTTS API:', url);
+          
+          audio.src = url;
+          
+          // 设置超时，如果10秒内没有开始播放，则认为失败
+          const timeout = setTimeout(() => {
+            console.error('TextReadTTS API超时');
+            reject(new Error('TextReadTTS API超时'));
+          }, 10000);
+          
+          // 监听音频事件
+          audio.addEventListener('canplaythrough', () => {
+            clearTimeout(timeout);
+            console.log('TextReadTTS API音频加载完成');
+          });
+          
+          audio.addEventListener('ended', () => {
+            clearTimeout(timeout);
+            console.log('TextReadTTS API播放完成:', text);
+            resolve();
+          });
+          
+          audio.addEventListener('error', (error) => {
+            clearTimeout(timeout);
+            console.error('TextReadTTS API播放失败:', error);
+            reject(error);
+          });
+          
+          // 播放音频
+          audio.play()
+            .then(() => {
+              console.log('TextReadTTS API播放开始:', text);
+            })
+            .catch(error => {
+              clearTimeout(timeout);
+              console.error('TextReadTTS API播放失败:', error);
+              reject(error);
+            });
+        } catch (error) {
+          console.error('TextReadTTS API初始化失败:', error);
+          reject(error);
+        }
+      });
+    }
+    
+    // Web Speech API作为后备方案
+    function tryWebSpeechAPI(text, lang = 'ja-JP') {
+      return new Promise((resolve, reject) => {
+        console.log('尝试使用Web Speech API播放语音:', text);
+        
+        // 检查浏览器是否支持语音合成
+        if ('speechSynthesis' in window) {
+          try {
+            // 停止任何正在进行的朗读
+            window.speechSynthesis.cancel();
+            
+            // 创建新的语音实例
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            
+            // 根据文本长度调整语速
+            // 单词用正常语速，例句用较慢语速以改善发音清晰度
+            if (text.length <= 20) {
+              utterance.rate = 0.85; // 单词：稍慢，清晰
+            } else {
+              utterance.rate = 0.75; // 例句：更慢，确保每个词清晰
+            }
+            
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // 监听语音事件
+            utterance.onend = () => {
+              console.log('Web Speech API播放完成:', text);
+              resolve();
+            };
+            
+            utterance.onerror = (error) => {
+              console.error('Web Speech API错误:', error);
+              reject(error);
+            };
+            
+            // 播放语音
+            window.speechSynthesis.speak(utterance);
+            console.log('使用Web Speech API播放语音，语速:', utterance.rate);
+          } catch (error) {
+            console.error('Web Speech API失败:', error);
+            reject(error);
+          }
+        } else {
+          const error = new Error('浏览器不支持语音合成功能');
+          reject(error);
+        }
+      });
+    }
+    
+    // 初始化音频系统
+    function initAudioSystem() {
+      try {
+        // 创建音频上下文
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          const audioContext = new AudioContext();
+          
+          // 创建一个静默的音频，触发音频系统初始化
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          gainNode.gain.value = 0; // 静音
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.01);
+          
+          console.log('音频系统初始化成功');
+        }
+        
+        // 创建一个静默的音频元素，触发音频系统
+        const silentAudio = new Audio();
+        silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAD';
+        silentAudio.play().catch(() => {
+          console.log('静默音频播放失败（预期行为）');
+        });
+        
+      } catch (error) {
+        console.error('音频系统初始化失败:', error);
+      }
+    }
+    
+    // 停止当前正在播放的音频
+    function stopCurrentAudio() {
+      // 停止Web Speech API
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      
+      // 停止当前音频元素
+      if (currentAudio) {
+        try {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        } catch (error) {
+          console.error('停止音频失败:', error);
+        }
+        currentAudio = null;
+      }
+    }
+    
+    // 监听用户交互，初始化音频系统
+    function setupUserInteractionListeners() {
+      // 监听多种用户交互事件
+      const interactionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
+      
+      interactionEvents.forEach(eventType => {
+        document.addEventListener(eventType, function initOnInteraction() {
+          if (!userHasInteracted) {
+            console.log('用户交互:', eventType);
+            initAudioSystem();
+            userHasInteracted = true;
+            
+            // 移除所有交互监听器
+            interactionEvents.forEach(type => {
+              document.removeEventListener(type, initOnInteraction);
+            });
+          }
+        }, { once: true });
+      });
+    }
+    
+    // 页面加载完成后设置用户交互监听器
+    document.addEventListener('DOMContentLoaded', function() {
+      setupUserInteractionListeners();
+      console.log('页面加载完成，设置用户交互监听器');
+    });
+    
+    // 切换到上一个页面
+    function prevWord() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateWordCard(false); // 传入false表示是切换页面，添加动画效果
+      }
+    }
+    
+    // 切换到下一个页面或返回第一个页面
+    function nextWord() {
+      if (currentIndex < vocabularyList.length) {
+        currentIndex++;
+      } else {
+        // 如果是最后一个单词页面，返回故事页面
+        currentIndex = 0;
+      }
+      updateWordCard(false); // 传入false表示是切换页面，添加动画效果
+    }
+    
+    // 显示信息弹窗
+    function showInfoModal() {
+      infoModal.classList.remove('hidden');
+      // 添加动画效果
+      const modalContent = infoModal.querySelector('div');
+      modalContent.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100', 'transition-all', 'duration-300');
+      }, 10);
+    }
+    
+    // 隐藏信息弹窗
+    function hideInfoModal() {
+      const modalContent = infoModal.querySelector('div');
+      modalContent.classList.remove('scale-100', 'opacity-100');
+      modalContent.classList.add('scale-95', 'opacity-0', 'transition-all', 'duration-300');
+      
+      setTimeout(() => {
+        infoModal.classList.add('hidden');
+      }, 300);
+    }
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+      prevBtn.addEventListener('click', prevWord);
+      nextBtn.addEventListener('click', nextWord);
+      infoBtn.addEventListener('click', showInfoModal);
+      closeModal.addEventListener('click', hideInfoModal);
+      gotItBtn.addEventListener('click', hideInfoModal);
+      
+      // 键盘导航
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') prevWord();
+        if (e.key === 'ArrowRight') nextWord();
+      });
+    }
+    
+    // 初始化函数
+    function init() {
+      // 初始化页面
+      updateWordCard(true);
+      setupEventListeners();
+    }
+    
+    // 切换单词和含义显示
+    function toggleWordMeaning(element, word, meaning) {
+      const wordText = element.querySelector('.word-text');
+      const wordMeaning = element.querySelector('.word-meaning');
+      const speakerButton = element.querySelector('button');
+      
+      if (wordMeaning.classList.contains('hidden')) {
+        // 显示含义，隐藏单词
+        wordText.classList.add('hidden');
+        wordMeaning.classList.remove('hidden');
+        // 改变背景色为更淡的橙色
+        element.classList.remove('bg-secondary/5');
+        element.classList.add('bg-accent/5');
+        // 改变喇叭颜色为橙色
+        if (speakerButton) {
+          speakerButton.classList.remove('text-secondary/70', 'hover:text-secondary/90');
+          speakerButton.classList.add('text-accent/70', 'hover:text-accent/90');
+        }
+      } else {
+        // 显示单词，隐藏含义
+        wordText.classList.remove('hidden');
+        wordMeaning.classList.add('hidden');
+        // 恢复背景色
+        element.classList.remove('bg-accent/5');
+        element.classList.add('bg-secondary/5');
+        // 恢复喇叭颜色为绿色
+        if (speakerButton) {
+          speakerButton.classList.remove('text-accent/70', 'hover:text-accent/90');
+          speakerButton.classList.add('text-secondary/70', 'hover:text-secondary/90');
+        }
+      }
+    }
+    
+    // 切换所有单词和含义显示
+    let isAllMeaningsShown = false;
+    function toggleAllWordMeanings() {
+      const wordElements = document.querySelectorAll('[onclick^="toggleWordMeaning"]');
+      const toggleIcon = document.getElementById('toggle-icon');
+      
+      wordElements.forEach(element => {
+        const wordText = element.querySelector('.word-text');
+        const wordMeaning = element.querySelector('.word-meaning');
+        
+        if (!isAllMeaningsShown) {
+          // 显示所有含义，隐藏所有单词
+          if (!wordMeaning.classList.contains('hidden')) return;
+          toggleWordMeaning(element);
+        } else {
+          // 显示所有单词，隐藏所有含义
+          if (wordMeaning.classList.contains('hidden')) return;
+          toggleWordMeaning(element);
+        }
+      });
+      
+      // 切换状态
+      isAllMeaningsShown = !isAllMeaningsShown;
+      
+      // 切换图标样式
+      if (isAllMeaningsShown) {
+        toggleIcon.classList.remove('fa-retweet');
+        toggleIcon.classList.add('fa-retweet', 'text-accent/50');
+      } else {
+        toggleIcon.classList.remove('text-accent/50');
+        toggleIcon.classList.add('fa-retweet');
+      }
+    }
+    
+    // 切换故事版本
+    function switchStoryTab(tab) {
+      const basicStory = document.getElementById('basic-story');
+      const rapStory = document.getElementById('rap-story');
+      const basicTab = document.querySelectorAll('[onclick="switchStoryTab(\'basic\')"]')[0];
+      const rapTab = document.querySelectorAll('[onclick="switchStoryTab(\'rap\')"]')[0];
+      
+      if (tab === 'basic') {
+        // 显示基础故事，隐藏RAP故事
+        basicStory.classList.remove('hidden');
+        basicStory.classList.add('block');
+        rapStory.classList.remove('block');
+        rapStory.classList.add('hidden');
+        
+        // 更新tab样式
+        basicTab.classList.add('bg-secondary/10', 'text-secondary');
+        basicTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        rapTab.classList.remove('bg-secondary/10', 'text-secondary');
+        rapTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+      } else {
+        // 显示RAP故事，隐藏基础故事
+        basicStory.classList.remove('block');
+        basicStory.classList.add('hidden');
+        rapStory.classList.remove('hidden');
+        rapStory.classList.add('block');
+        
+        // 更新tab样式
+        rapTab.classList.add('bg-secondary/10', 'text-secondary');
+        rapTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        basicTab.classList.remove('bg-secondary/10', 'text-secondary');
+        basicTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+      }
+    }
+    
+    // 存储原始单词列表顺序
+    let originalWordOrder = null;
+    
+    // 切换单词排序方式
+    function switchWordOrderTab(order) {
+      const normalTab = document.getElementById('word-order-normal');
+      const randomTab = document.getElementById('word-order-random');
+      const container = document.getElementById('word-list-container');
+      
+      if (!container) return;
+      
+      // 保存原始顺序（首次调用时）
+      if (originalWordOrder === null) {
+        originalWordOrder = Array.from(container.children);
+      }
+      
+      if (order === 'normal') {
+        // 恢复原始顺序
+        container.innerHTML = '';
+        originalWordOrder.forEach(item => container.appendChild(item.cloneNode(true)));
+        
+        // 更新tab样式
+        normalTab.classList.add('bg-secondary/10', 'text-secondary');
+        normalTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        randomTab.classList.remove('bg-secondary/10', 'text-secondary');
+        randomTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+      } else {
+        // 随机排序
+        const items = Array.from(container.children);
+        shuffleArray(items);
+        container.innerHTML = '';
+        items.forEach(item => container.appendChild(item));
+        
+        // 更新tab样式
+        randomTab.classList.add('bg-secondary/10', 'text-secondary');
+        randomTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        normalTab.classList.remove('bg-secondary/10', 'text-secondary');
+        normalTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+      }
+    }
+    
+    // Fisher-Yates 洗牌算法
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    
+    // 切换日语单词显示/隐藏
+    let areWordsVisible = true;
+    function toggleJapaneseWords() {
+      const eyeIcon = document.getElementById('eye-icon');
+      // 选择所有带有data-original-text属性的span元素，这些是日语单词
+      const wordSpans = document.querySelectorAll('#story-page span[data-original-text]');
+      
+      console.log('Found', wordSpans.length, 'Japanese word spans');
+      
+      wordSpans.forEach(span => {
+        if (areWordsVisible) {
+          // 隐藏单词文本，保持下划线可见
+          // 存储原始颜色
+          span.dataset.originalColor = span.style.color;
+          // 将文本颜色设置为透明
+          span.style.color = 'transparent';
+          console.log('Hidden word:', span.dataset.originalText);
+        } else {
+          // 恢复原始颜色
+          if (span.dataset.originalColor) {
+            span.style.color = span.dataset.originalColor;
+            console.log('Restored word:', span.dataset.originalText);
+          } else {
+            // 默认颜色
+            span.style.color = '#10B981';
+          }
+        }
+      });
+      
+      // 切换状态
+      areWordsVisible = !areWordsVisible;
+      
+      // 切换图标状态
+      if (areWordsVisible) {
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+        console.log('Icon changed to fa-eye');
+      } else {
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+        console.log('Icon changed to fa-eye-slash');
+      }
+    }
+    
+    // 初始化应用
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
