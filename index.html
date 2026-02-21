@@ -1304,6 +1304,7 @@
     // 切换故事版本
     let rapFontSizeState = 0;
     let currentStoryTab = 'basic';
+    let originalRapContent = '';
     
     function applyRapFontSize() {
       const applyStyle = () => {
@@ -1311,10 +1312,86 @@
         const rapParagraph = rapStory?.querySelector('p');
         if (!rapParagraph) return;
         
+        if (originalRapContent === '') {
+          originalRapContent = rapParagraph.innerHTML;
+        }
+        
         if (rapFontSizeState === 0) {
           rapParagraph.style.fontSize = '';
+          rapParagraph.style.textAlign = 'left';
+          rapParagraph.innerHTML = originalRapContent;
+          if (!areWordsVisible) {
+            const rapWordSpans = rapParagraph.querySelectorAll('span[data-original-text]');
+            rapWordSpans.forEach(span => {
+              span.style.color = 'transparent';
+            });
+          }
         } else if (rapFontSizeState === 1) {
           rapParagraph.style.fontSize = 'calc(1rem - 2px)';
+          rapParagraph.style.textAlign = 'left';
+          rapParagraph.innerHTML = originalRapContent;
+          if (!areWordsVisible) {
+            const rapWordSpans = rapParagraph.querySelectorAll('span[data-original-text]');
+            rapWordSpans.forEach(span => {
+              span.style.color = 'transparent';
+            });
+          }
+        } else if (rapFontSizeState === 2) {
+          rapParagraph.style.fontSize = 'calc(1rem - 2px)';
+          rapParagraph.style.textAlign = 'center';
+          
+          let tempDiv = document.createElement('div');
+          tempDiv.innerHTML = originalRapContent;
+          
+          let walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
+          let textNodes = [];
+          while (walker.nextNode()) {
+            textNodes.push(walker.currentNode);
+          }
+          
+          textNodes.forEach(textNode => {
+            let text = textNode.textContent;
+            if (/[，,。.??!!]/.test(text)) {
+              let parts = text.split(/([，,。.??!!])/);
+              let fragment = document.createDocumentFragment();
+              for (let i = 0; i < parts.length; i++) {
+                if (parts[i]) {
+                  if (/[，,。.??!!]/.test(parts[i])) {
+                    fragment.appendChild(document.createTextNode(parts[i]));
+                    fragment.appendChild(document.createElement('br'));
+                  } else {
+                    fragment.appendChild(document.createTextNode(parts[i]));
+                  }
+                }
+              }
+              textNode.parentNode.replaceChild(fragment, textNode);
+            }
+          });
+          
+          let lines = [];
+          let currentDiv = document.createElement('div');
+          currentDiv.style.display = 'block';
+          currentDiv.style.margin = '0.25rem 0';
+          
+          tempDiv.childNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'BR') {
+              lines.push(currentDiv.outerHTML);
+              currentDiv = document.createElement('div');
+              currentDiv.style.display = 'block';
+              currentDiv.style.margin = '0.25rem 0';
+            } else {
+              currentDiv.appendChild(node.cloneNode(true));
+            }
+          });
+          lines.push(currentDiv.outerHTML);
+          
+          rapParagraph.innerHTML = lines.join('');
+          if (!areWordsVisible) {
+            const rapWordSpans = rapParagraph.querySelectorAll('span[data-original-text]');
+            rapWordSpans.forEach(span => {
+              span.style.color = 'transparent';
+            });
+          }
         }
       };
       
@@ -1344,7 +1421,7 @@
         currentStoryTab = 'basic';
       } else {
         if (currentStoryTab === 'rap') {
-          rapFontSizeState = (rapFontSizeState + 1) % 2;
+          rapFontSizeState = (rapFontSizeState + 1) % 3;
           applyRapFontSize();
           return;
         }
@@ -1361,6 +1438,14 @@
         
         currentStoryTab = 'rap';
         applyRapFontSize();
+        
+        // 应用眼睛按钮状态到RAP故事
+        if (!areWordsVisible) {
+          const rapWordSpans = document.querySelectorAll('#rap-story span[data-original-text]');
+          rapWordSpans.forEach(span => {
+            span.style.color = 'transparent';
+          });
+        }
       }
     }
     
@@ -1440,6 +1525,16 @@
             // 默认颜色
             span.style.color = '#10B981';
           }
+        }
+      });
+      
+      // 同时应用到RAP故事中的日语单词
+      const rapWordSpans = document.querySelectorAll('#rap-story span[data-original-text]');
+      rapWordSpans.forEach(span => {
+        if (areWordsVisible) {
+          span.style.color = 'transparent';
+        } else {
+          span.style.color = '#10B981';
         }
       });
       
