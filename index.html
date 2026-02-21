@@ -175,6 +175,39 @@
       .hidden-kana {
         display: none;
       }
+      
+      /* 释义和翻译遮罩效果 - 灰色色块 */
+      .meaning-masked {
+        position: relative;
+      }
+      
+      .meaning-masked::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #eaebee;
+        border-radius: 3px;
+        z-index: 10;
+      }
+      
+      /* 灯泡图标样式 */
+      .lightbulb-on {
+        color: #F59E0B;
+      }
+      
+      .lightbulb-off {
+        color: #9CA3AF;
+      }
+      
+      /* 移动端灯泡样式 */
+      @media (max-width: 640px) {
+        #lightbulb-icon {
+          font-size: 1.25rem !important;
+        }
+      }
     }
   </style>
 </head>
@@ -339,7 +372,14 @@
       </div>
       
       <!-- 单词卡片 -->
-      <div id="word-card" class="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 card-shadow card-hover transition-all duration-500 hidden">
+      <div id="word-card" class="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 card-shadow card-hover transition-all duration-500 hidden" style="position: relative;">
+        <!-- 右上角灯泡图标 -->
+        <div style="position: absolute; top: 26px; right: 20px; z-index: 20;">
+          <button onclick="toggleLightBulb()" class="btn-bounce" title="隐藏/显示释义">
+            <i class="fa fa-lightbulb-o text-2xl lightbulb-on" id="lightbulb-icon" style="font-size: 1.5rem;"></i>
+          </button>
+        </div>
+        
         <!-- 单词和音标 -->
         <div class="mb-2 word-phonetic-container">
           <div class="word-container">
@@ -374,7 +414,7 @@
         
         <!-- 单词释义 -->
         <div class="mb-6">
-          <div id="part-of-speech"></div>
+          <div id="part-of-speech" onclick="toggleSingleMeaning('part-of-speech')" style="cursor: pointer;"></div>
         </div>
         
         <!-- 例句 -->
@@ -387,7 +427,7 @@
           </h3>
           <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
             <p id="example-sentence" class="text-gray-800 dark:text-gray-200 mb-2"></p>
-            <p id="example-translation" class="text-gray-600 dark:text-gray-400 text-sm"></p>
+            <p id="example-translation" onclick="toggleSingleMeaning('example-translation')" style="cursor: pointer;" class="text-gray-600 dark:text-gray-400 text-sm"></p>
           </div>
         </div>
         
@@ -633,6 +673,94 @@
     // 当前页面索引 (0: 故事页面, 1-10: 单词页面)
     let currentIndex = 0;
     
+    // 灯泡状态（全局，对所有单词页生效）
+    let isLightBulbOn = true;
+    
+    // 单个单词页的含义状态（局部，每个单词独立）
+    let singleMeaningStates = {}; // { wordIndex: { partOfSpeech: boolean, exampleTranslation: boolean } }
+    
+    // 切换单个含义的显示/隐藏
+    function toggleSingleMeaning(type) {
+      const wordIndex = currentIndex - 1;
+      if (wordIndex < 0) return;
+      
+      const propKey = type === 'part-of-speech' ? 'partOfSpeech' : 'exampleTranslation';
+      
+      if (!singleMeaningStates[wordIndex]) {
+        singleMeaningStates[wordIndex] = {
+          partOfSpeech: true,
+          exampleTranslation: true
+        };
+      }
+      
+      singleMeaningStates[wordIndex][propKey] = !singleMeaningStates[wordIndex][propKey];
+      applyMeaningDisplay();
+    }
+    
+    // 应用含义显示状态
+    function applyMeaningDisplay() {
+      const wordIndex = currentIndex - 1;
+      const partOfSpeechEl = document.getElementById('part-of-speech');
+      const exampleTranslationEl = document.getElementById('example-translation');
+      const lightbulbIcon = document.getElementById('lightbulb-icon');
+      
+      if (lightbulbIcon) {
+        if (isLightBulbOn) {
+          lightbulbIcon.className = 'fa fa-lightbulb-o text-2xl lightbulb-on';
+          lightbulbIcon.style.fontSize = '1.5rem';
+        } else {
+          lightbulbIcon.className = 'fa fa-lightbulb-o text-2xl lightbulb-off';
+          lightbulbIcon.style.fontSize = '1.5rem';
+        }
+      }
+      
+      if (wordIndex >= 0 && singleMeaningStates[wordIndex]) {
+        if (singleMeaningStates[wordIndex].partOfSpeech) {
+          partOfSpeechEl?.classList.remove('meaning-masked');
+        } else {
+          partOfSpeechEl?.classList.add('meaning-masked');
+        }
+        
+        if (singleMeaningStates[wordIndex].exampleTranslation) {
+          exampleTranslationEl?.classList.remove('meaning-masked');
+        } else {
+          exampleTranslationEl?.classList.add('meaning-masked');
+        }
+      } else {
+        if (isLightBulbOn) {
+          partOfSpeechEl?.classList.remove('meaning-masked');
+          exampleTranslationEl?.classList.remove('meaning-masked');
+        } else {
+          partOfSpeechEl?.classList.add('meaning-masked');
+          exampleTranslationEl?.classList.add('meaning-masked');
+        }
+      }
+    }
+    
+    // 切换灯泡状态
+    function toggleLightBulb() {
+      isLightBulbOn = !isLightBulbOn;
+      
+      if (isLightBulbOn) {
+        for (let key in singleMeaningStates) {
+          singleMeaningStates[key].partOfSpeech = true;
+          singleMeaningStates[key].exampleTranslation = true;
+        }
+      } else {
+        for (let key in singleMeaningStates) {
+          singleMeaningStates[key].partOfSpeech = false;
+          singleMeaningStates[key].exampleTranslation = false;
+        }
+      }
+      
+      applyMeaningDisplay();
+    }
+    
+    // 应用灯泡状态（兼容旧调用）
+    function applyLightBulbState() {
+      applyMeaningDisplay();
+    }
+    
     // DOM元素
     const storyPage = document.getElementById('story-page');
     const wordCard = document.getElementById('word-card');
@@ -692,6 +820,9 @@
         mixedElement.innerHTML = wordData.mixed;
         rapElement.innerHTML = wordData.rap;
         counterElement.textContent = `${currentIndex + 1}/11`;
+        
+        // 应用灯泡状态（保持全局状态）
+        applyLightBulbState();
         
         // 更新按钮状态
         prevBtn.disabled = false;
@@ -1171,6 +1302,28 @@
     }
     
     // 切换故事版本
+    let rapFontSizeState = 0;
+    let currentStoryTab = 'basic';
+    
+    function applyRapFontSize() {
+      const applyStyle = () => {
+        const rapStory = document.getElementById('rap-story');
+        const rapParagraph = rapStory?.querySelector('p');
+        if (!rapParagraph) return;
+        
+        if (rapFontSizeState === 0) {
+          rapParagraph.style.fontSize = '';
+        } else if (rapFontSizeState === 1) {
+          rapParagraph.style.fontSize = 'calc(1rem - 2px)';
+        }
+      };
+      
+      applyStyle();
+      setTimeout(applyStyle, 50);
+      setTimeout(applyStyle, 100);
+      setTimeout(applyStyle, 200);
+    }
+    
     function switchStoryTab(tab) {
       const basicStory = document.getElementById('basic-story');
       const rapStory = document.getElementById('rap-story');
@@ -1178,29 +1331,36 @@
       const rapTab = document.querySelectorAll('[onclick="switchStoryTab(\'rap\')"]')[0];
       
       if (tab === 'basic') {
-        // 显示基础故事，隐藏RAP故事
         basicStory.classList.remove('hidden');
         basicStory.classList.add('block');
         rapStory.classList.remove('block');
         rapStory.classList.add('hidden');
         
-        // 更新tab样式
         basicTab.classList.add('bg-secondary/10', 'text-secondary');
         basicTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
         rapTab.classList.remove('bg-secondary/10', 'text-secondary');
         rapTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        
+        currentStoryTab = 'basic';
       } else {
-        // 显示RAP故事，隐藏基础故事
+        if (currentStoryTab === 'rap') {
+          rapFontSizeState = (rapFontSizeState + 1) % 2;
+          applyRapFontSize();
+          return;
+        }
+        
         basicStory.classList.remove('block');
         basicStory.classList.add('hidden');
         rapStory.classList.remove('hidden');
         rapStory.classList.add('block');
         
-        // 更新tab样式
         rapTab.classList.add('bg-secondary/10', 'text-secondary');
         rapTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
         basicTab.classList.remove('bg-secondary/10', 'text-secondary');
         basicTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        
+        currentStoryTab = 'rap';
+        applyRapFontSize();
       }
     }
     
