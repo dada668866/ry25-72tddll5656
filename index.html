@@ -688,8 +688,8 @@
       
       if (!singleMeaningStates[wordIndex]) {
         singleMeaningStates[wordIndex] = {
-          partOfSpeech: true,
-          exampleTranslation: true
+          partOfSpeech: isLightBulbOn ? true : false,
+          exampleTranslation: isLightBulbOn ? true : false
         };
       }
       
@@ -741,15 +741,16 @@
     function toggleLightBulb() {
       isLightBulbOn = !isLightBulbOn;
       
-      if (isLightBulbOn) {
-        for (let key in singleMeaningStates) {
-          singleMeaningStates[key].partOfSpeech = true;
-          singleMeaningStates[key].exampleTranslation = true;
-        }
-      } else {
-        for (let key in singleMeaningStates) {
-          singleMeaningStates[key].partOfSpeech = false;
-          singleMeaningStates[key].exampleTranslation = false;
+      const wordIndex = currentIndex - 1;
+      if (wordIndex >= 0) {
+        if (!singleMeaningStates[wordIndex]) {
+          singleMeaningStates[wordIndex] = {
+            partOfSpeech: isLightBulbOn ? true : false,
+            exampleTranslation: isLightBulbOn ? true : false
+          };
+        } else {
+          singleMeaningStates[wordIndex].partOfSpeech = isLightBulbOn ? true : false;
+          singleMeaningStates[wordIndex].exampleTranslation = isLightBulbOn ? true : false;
         }
       }
       
