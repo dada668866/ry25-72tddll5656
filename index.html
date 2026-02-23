@@ -145,9 +145,9 @@
           font-size: 1.2em !important;
         }
         
-        /* 移动端隐藏例句播放按钮 */
+        /* 移动端显示例句播放按钮 */
         .example-speaker-btn {
-          display: none !important;
+          display: inline-flex !important;
         }
         
         /* 确保标题前的图标在移动端正确显示 */
@@ -253,8 +253,8 @@
               <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="大抵"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>大抵<span class="hidden-kana">（たいてい）</span></span>守在<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="自宅"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>自宅<span class="hidden-kana">（じたく）</span></span>，以<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="文通"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>文通<span class="hidden-kana">（ぶんつう）</span></span>把心意汇。<br>
               <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="参考"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>参考<span class="hidden-kana">（さんこう）</span></span>Ai <span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="アドバイザー"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>アドバイザー</span>，思路一步步相随。<br>
               待到工作<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="出来上がる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>出来上がる<span class="hidden-kana">（できあがる）</span></span>，满心成就感难退。<br>
-              纵然相隔千万里，也能<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="聞こえる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>聞こえる<span class="hidden-kana">（きこえる）</span></span>声声慰，<br>
-              团队之力燃心火，一路向前不皱眉
+              纵然相隔千万里，也能<span style="color: #10B981; font-weight: 600; text-decoration: none; position: relative; display: inline-block; padding-bottom: 0.5px;" data-original-text="聞こえる"><span style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background-color: #10B981; border-radius: 2px;"></span>聞こえる<span class="hidden-kana">（きこえる）</span></span>声声慰。<br>
+              团队之力燃心火，一路向前不皱眉。
             </p>
           </div>
         </div>
@@ -881,25 +881,59 @@
       // 检测是否为移动设备
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
+      // 检查是否是例句（文本较长）
+      const isExample = text.length > 15;
+      
       if (isMobile) {
-        // 移动设备：策略不变
-        if (text.length <= 15) {
-          // 短文本（单词）：使用有道词典API
-          tryYoudaoAPI(text, lang)
+        // 移动设备
+        if (isExample) {
+          // 移动端例句：只用新TTS
+          console.log('移动端例句，只用新TTS');
+          tryNewTTSAPI(text, lang)
             .catch(error => {
-              console.error('有道词典API失败:', error);
+              console.error('新TTS API失败:', error);
             });
         } else {
-          // 长文本（例句）：使用TextReadTTS API
-          console.log('文本较长，使用TextReadTTS API');
-          tryTextReadTTS(text, lang)
+          // 移动端单词：首选新TTS，备选有道词典
+          console.log('移动端单词，首选新TTS，备选有道词典');
+          tryNewTTSAPI(text, lang)
             .catch(error => {
-              console.error('TextReadTTS API失败:', error);
+              console.log('新TTS API失败，使用有道词典:', error);
+              return tryYoudaoAPI(text, lang);
+            })
+            .catch(error => {
+              console.error('所有TTS服务均失败:', error);
             });
         }
       } else {
-        // PC设备：根据VPN状态选择TTS服务
-        checkVPNAndSpeak(text, lang);
+        // PC设备
+        if (isExample) {
+          // PC端例句：首选新TTS，备选Web Speech
+          console.log('PC端例句，首选新TTS，备选Web Speech');
+          tryNewTTSAPI(text, lang)
+            .catch(error => {
+              console.log('新TTS API失败，使用Web Speech API:', error);
+              return tryWebSpeechAPI(text, lang);
+            })
+            .catch(error => {
+              console.error('所有TTS服务均失败:', error);
+            });
+        } else {
+          // PC端单词：首选新TTS，备选有道词典，最后Web Speech
+          console.log('PC端单词，首选新TTS，备选有道词典，最后Web Speech');
+          tryNewTTSAPI(text, lang)
+            .catch(error => {
+              console.log('新TTS API失败，使用有道词典:', error);
+              return tryYoudaoAPI(text, lang);
+            })
+            .catch(error => {
+              console.log('有道词典API失败，使用Web Speech API:', error);
+              return tryWebSpeechAPI(text, lang);
+            })
+            .catch(error => {
+              console.error('所有TTS服务均失败:', error);
+            });
+        }
       }
     }
     
@@ -920,6 +954,78 @@
         .catch(error => {
           console.error('所有TTS服务均失败:', error);
         });
+    }
+    
+    // 使用新的TTS API
+    function tryNewTTSAPI(text, lang = 'ja-JP') {
+      return new Promise(async (resolve, reject) => {
+        console.log('使用新TTS API播放:', text);
+        
+        try {
+          const response = await fetch('https://sndcirap.ccwu.cc/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: text,
+              voice: "ja-JP-NanamiNeural",
+              speed: 1.0,
+              pitch: "0",
+              style: "affectionate"
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status}`);
+          }
+          
+          const audioBlob = await response.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          
+          const audio = new Audio();
+          currentAudio = audio;
+          audio.src = audioUrl;
+          
+          const timeout = setTimeout(() => {
+            console.error('新TTS API超时');
+            reject(new Error('新TTS API超时'));
+          }, 15000);
+          
+          audio.addEventListener('canplaythrough', () => {
+            clearTimeout(timeout);
+            console.log('新TTS API音频加载完成');
+          });
+          
+          audio.addEventListener('ended', () => {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(audioUrl);
+            console.log('新TTS API播放完成:', text);
+            resolve();
+          });
+          
+          audio.addEventListener('error', (error) => {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(audioUrl);
+            console.error('新TTS API播放失败:', error);
+            reject(error);
+          });
+          
+          audio.play()
+            .then(() => {
+              console.log('新TTS API播放开始:', text);
+            })
+            .catch(error => {
+              clearTimeout(timeout);
+              URL.revokeObjectURL(audioUrl);
+              console.error('新TTS API播放失败:', error);
+              reject(error);
+            });
+        } catch (error) {
+          console.error('新TTS API初始化失败:', error);
+          reject(error);
+        }
+      });
     }
     
     // 尝试使用有道词典API
