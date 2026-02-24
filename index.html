@@ -863,6 +863,8 @@
     // 全局变量存储音频元素和用户交互状态
     let userHasInteracted = false;
     let currentAudio = null;
+    let currentAudioUrl = null;
+    let currentPlayingId = null;
     
     // 文本朗读功能 - 使用多种TTS服务
     function speakText(text, lang = 'ja-JP') {
@@ -878,6 +880,10 @@
       // 停止当前正在播放的音频
       stopCurrentAudio();
       
+      // 生成播放ID
+      const playingId = `text-${Date.now()}`;
+      currentPlayingId = playingId;
+      
       // 检测是否为移动设备
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
@@ -889,17 +895,17 @@
         if (isExample) {
           // 移动端例句：只用新TTS
           console.log('移动端例句，只用新TTS');
-          tryNewTTSAPI(text, lang)
+          tryNewTTSAPI(text, lang, playingId)
             .catch(error => {
               console.error('新TTS API失败:', error);
             });
         } else {
           // 移动端单词：首选新TTS，备选有道词典
           console.log('移动端单词，首选新TTS，备选有道词典');
-          tryNewTTSAPI(text, lang)
+          tryNewTTSAPI(text, lang, playingId)
             .catch(error => {
               console.log('新TTS API失败，使用有道词典:', error);
-              return tryYoudaoAPI(text, lang);
+              return tryYoudaoAPI(text, lang, playingId);
             })
             .catch(error => {
               console.error('所有TTS服务均失败:', error);
@@ -910,10 +916,10 @@
         if (isExample) {
           // PC端例句：首选新TTS，备选Web Speech
           console.log('PC端例句，首选新TTS，备选Web Speech');
-          tryNewTTSAPI(text, lang)
+          tryNewTTSAPI(text, lang, playingId)
             .catch(error => {
               console.log('新TTS API失败，使用Web Speech API:', error);
-              return tryWebSpeechAPI(text, lang);
+              return tryWebSpeechAPI(text, lang, playingId);
             })
             .catch(error => {
               console.error('所有TTS服务均失败:', error);
@@ -921,14 +927,14 @@
         } else {
           // PC端单词：首选新TTS，备选有道词典，最后Web Speech
           console.log('PC端单词，首选新TTS，备选有道词典，最后Web Speech');
-          tryNewTTSAPI(text, lang)
+          tryNewTTSAPI(text, lang, playingId)
             .catch(error => {
               console.log('新TTS API失败，使用有道词典:', error);
-              return tryYoudaoAPI(text, lang);
+              return tryYoudaoAPI(text, lang, playingId);
             })
             .catch(error => {
               console.log('有道词典API失败，使用Web Speech API:', error);
-              return tryWebSpeechAPI(text, lang);
+              return tryWebSpeechAPI(text, lang, playingId);
             })
             .catch(error => {
               console.error('所有TTS服务均失败:', error);
@@ -957,7 +963,7 @@
     }
     
     // 使用新的TTS API
-    function tryNewTTSAPI(text, lang = 'ja-JP') {
+    function tryNewTTSAPI(text, lang = 'ja-JP', playingId = null) {
       return new Promise(async (resolve, reject) => {
         console.log('使用新TTS API播放:', text);
         
@@ -983,6 +989,10 @@
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
           
+          // 存储当前音频URL
+          currentAudioUrl = audioUrl;
+          currentPlayingId = playingId;
+          
           const audio = new Audio();
           currentAudio = audio;
           audio.src = audioUrl;
@@ -1000,6 +1010,10 @@
           audio.addEventListener('ended', () => {
             clearTimeout(timeout);
             URL.revokeObjectURL(audioUrl);
+            if (currentAudioUrl === audioUrl) {
+              currentAudioUrl = null;
+              currentPlayingId = null;
+            }
             console.log('新TTS API播放完成:', text);
             resolve();
           });
@@ -1007,6 +1021,10 @@
           audio.addEventListener('error', (error) => {
             clearTimeout(timeout);
             URL.revokeObjectURL(audioUrl);
+            if (currentAudioUrl === audioUrl) {
+              currentAudioUrl = null;
+              currentPlayingId = null;
+            }
             console.error('新TTS API播放失败:', error);
             reject(error);
           });
@@ -1018,6 +1036,10 @@
             .catch(error => {
               clearTimeout(timeout);
               URL.revokeObjectURL(audioUrl);
+              if (currentAudioUrl === audioUrl) {
+                currentAudioUrl = null;
+                currentPlayingId = null;
+              }
               console.error('新TTS API播放失败:', error);
               reject(error);
             });
@@ -1029,7 +1051,7 @@
     }
     
     // 尝试使用有道词典API
-    function tryYoudaoAPI(text, lang = 'ja-JP') {
+    function tryYoudaoAPI(text, lang = 'ja-JP', playingId = null) {
       return new Promise((resolve, reject) => {
         console.log('尝试使用有道词典API播放语音:', text);
         
@@ -1037,6 +1059,7 @@
           // 创建音频元素
           const audio = new Audio();
           currentAudio = audio;
+          currentPlayingId = playingId;
           
           // 使用有道词典TTS服务
           // 重要：使用HTTPS协议，避免混合内容问题
@@ -1049,6 +1072,7 @@
           // 设置超时，如果5秒内没有开始播放，则认为失败
           const timeout = setTimeout(() => {
             console.error('有道词典API超时');
+            currentPlayingId = null;
             reject(new Error('有道词典API超时'));
           }, 5000);
           
@@ -1061,12 +1085,14 @@
           audio.addEventListener('ended', () => {
             clearTimeout(timeout);
             console.log('有道词典API播放完成:', text);
+            currentPlayingId = null;
             resolve();
           });
           
           audio.addEventListener('error', (error) => {
             clearTimeout(timeout);
             console.error('有道词典API播放失败:', error);
+            currentPlayingId = null;
             reject(error);
           });
           
@@ -1078,10 +1104,12 @@
             .catch(error => {
               clearTimeout(timeout);
               console.error('有道词典API播放失败:', error);
+              currentPlayingId = null;
               reject(error);
             });
         } catch (error) {
           console.error('有道词典API初始化失败:', error);
+          currentPlayingId = null;
           reject(error);
         }
       });
@@ -1147,7 +1175,7 @@
     }
     
     // Web Speech API作为后备方案
-    function tryWebSpeechAPI(text, lang = 'ja-JP') {
+    function tryWebSpeechAPI(text, lang = 'ja-JP', playingId = null) {
       return new Promise((resolve, reject) => {
         console.log('尝试使用Web Speech API播放语音:', text);
         
@@ -1156,6 +1184,9 @@
           try {
             // 停止任何正在进行的朗读
             window.speechSynthesis.cancel();
+            
+            // 设置当前播放ID
+            currentPlayingId = playingId;
             
             // 创建新的语音实例
             const utterance = new SpeechSynthesisUtterance(text);
@@ -1175,11 +1206,17 @@
             // 监听语音事件
             utterance.onend = () => {
               console.log('Web Speech API播放完成:', text);
+              if (currentPlayingId === playingId) {
+                currentPlayingId = null;
+              }
               resolve();
             };
             
             utterance.onerror = (error) => {
               console.error('Web Speech API错误:', error);
+              if (currentPlayingId === playingId) {
+                currentPlayingId = null;
+              }
               reject(error);
             };
             
@@ -1188,6 +1225,7 @@
             console.log('使用Web Speech API播放语音，语速:', utterance.rate);
           } catch (error) {
             console.error('Web Speech API失败:', error);
+            currentPlayingId = null;
             reject(error);
           }
         } else {
@@ -1248,6 +1286,19 @@
         }
         currentAudio = null;
       }
+      
+      // 释放当前音频URL
+      if (currentAudioUrl) {
+        try {
+          URL.revokeObjectURL(currentAudioUrl);
+        } catch (error) {
+          console.error('释放音频URL失败:', error);
+        }
+        currentAudioUrl = null;
+      }
+      
+      // 清除当前播放ID
+      currentPlayingId = null;
     }
     
     // 监听用户交互，初始化音频系统
